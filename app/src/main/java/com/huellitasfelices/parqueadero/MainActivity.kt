@@ -19,6 +19,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 
@@ -68,6 +69,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    inner class CompartirBridge {
+        @JavascriptInterface
+        fun compartirConQR(texto: String, nombreImagen: String) {
+            Thread {
+                try {
+                    val destino = File(cacheDir, "images").apply { mkdirs() }
+                    val archivo = File(destino, nombreImagen)
+                    assets.open(nombreImagen).use { entrada ->
+                        FileOutputStream(archivo).use { salida -> entrada.copyTo(salida) }
+                    }
+                    val uri = FileProvider.getUriForFile(
+                        this@MainActivity,
+                        "$packageName.fileprovider",
+                        archivo
+                    )
+                    runOnUiThread {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "image/jpeg"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(Intent.EXTRA_TEXT, texto)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        startActivity(Intent.createChooser(intent, "Enviar recibo"))
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "No se pudo compartir el QR", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -89,6 +123,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.addJavascriptInterface(DescargaBridge(), "AndroidDownload")
+        webView.addJavascriptInterface(CompartirBridge(), "AndroidShare")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {

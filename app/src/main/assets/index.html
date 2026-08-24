@@ -158,6 +158,10 @@ nav button.on{color:var(--ambar)}
   font-size:12px;color:var(--tinta2);line-height:1.65}
 .legal b{color:var(--ambar)}
 .alerta-tope{color:var(--rojo);font-size:12px;margin-top:6px}
+.qr-bloque{text-align:center;margin-bottom:14px}
+.qr-bloque img{width:170px;height:170px;object-fit:contain;border-radius:10px;border:1px solid var(--linea);
+  background:#fff;padding:6px;display:block;margin:0 auto}
+.qr-bloque.chico img{width:120px;height:120px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -398,9 +402,16 @@ nav button.on{color:var(--ambar)}
     <h2 id="rTitulo">Recibo</h2>
     <p class="nota" id="rDestino" style="margin-bottom:10px"></p>
     <div class="previa" id="rTexto"></div>
+    <div class="qr-bloque" id="rQrBloque" hidden>
+      <img id="rQrImg" src="qr_nequi.jpg" alt="QR Nequi">
+      <p class="nota" id="rQrLeyenda" style="margin-top:8px">QR Nequi</p>
+    </div>
+    <button class="btn wa" id="rQR" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.7 15l-1.3 5 5.1-1.3A10 10 0 1012 2zm5.6 14.1c-.2.7-1.4 1.3-1.9 1.3-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.4.7-.4h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.4.5-.3.3c-.1.1-.2.3 0 .5.2.3.8 1.3 1.7 2.1 1.1 1 2 1.3 2.3 1.4.2.1.4.1.5-.1l.8-.9c.2-.2.3-.2.5-.1l2 .9c.2.1.4.2.4.3.1.2.1.7-.1 1.3z"/></svg>
+      Enviar recibo con QR Nequi</button>
     <a class="btn wa" id="rWA" href="#" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.7 15l-1.3 5 5.1-1.3A10 10 0 1012 2zm5.6 14.1c-.2.7-1.4 1.3-1.9 1.3-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.4.7-.4h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.4.5-.3.3c-.1.1-.2.3 0 .5.2.3.8 1.3 1.7 2.1 1.1 1 2 1.3 2.3 1.4.2.1.4.1.5-.1l.8-.9c.2-.2.3-.2.5-.1l2 .9c.2.1.4.2.4.3.1.2.1.7-.1 1.3z"/></svg>
-      Abrir WhatsApp</a>
+      Abrir WhatsApp (solo texto)</a>
     <button class="btn sec" id="rCompartir">Compartir por otra app</button>
     <button class="btn sec" id="rCopiar">Copiar el texto del recibo</button>
     <button class="btn sec" id="rCerrar">Cerrar</button>
@@ -435,7 +446,7 @@ const TARIFAS_BASE={carro:{min:200,dia:22000,mes:180000},moto:{min:140,dia:11000
   bicicleta:{min:10,dia:3000,mes:35000},patineta:{min:10,dia:3000,mes:35000}};
 const MEDIOS_BASE=[
   {id:'efectivo',n:'Efectivo en caja',on:true,dato:'',link:''},
-  {id:'nequi',n:'Nequi',on:true,dato:'',link:''},
+  {id:'nequi',n:'Nequi',on:true,dato:'3114980095',link:''},
   {id:'daviplata',n:'Daviplata',on:true,dato:'',link:''},
   {id:'pse',n:'PSE / botón de pago',on:false,dato:'',link:''},
   {id:'transferencia',n:'Transferencia bancaria',on:false,dato:'',link:''},
@@ -600,11 +611,21 @@ function abrirWA(cel,msg,titulo){
   $('#rTexto').textContent=msg;
   $('#rWA').href=`https://wa.me/${n}?text=${encodeURIComponent(msg)}`;
   $('#rCompartir').hidden=!navigator.share;
+  const nequi=cfg.medios.find(m=>m.id==='nequi'&&m.on);
+  $('#rQrBloque').hidden=!nequi;
+  if(nequi)$('#rQrLeyenda').textContent='QR Nequi'+(nequi.dato?' · '+nequi.dato:'');
+  $('#rQR').hidden=!(nequi&&window.AndroidShare&&window.AndroidShare.compartirConQR);
   $('#fondoRecibo').hidden=false;
 }
 $('#rCerrar').addEventListener('click',()=>$('#fondoRecibo').hidden=true);
 $('#fondoRecibo').addEventListener('click',e=>{if(e.target.id==='fondoRecibo')$('#fondoRecibo').hidden=true});
 $('#rWA').addEventListener('click',()=>setTimeout(()=>$('#fondoRecibo').hidden=true,600));
+$('#rQR').addEventListener('click',()=>{
+  if(window.AndroidShare&&window.AndroidShare.compartirConQR){
+    window.AndroidShare.compartirConQR(reciboActual,'qr_nequi.jpg');
+    $('#fondoRecibo').hidden=true;
+  }
+});
 $('#rCompartir').addEventListener('click',async()=>{
   try{await navigator.share({text:reciboActual});$('#fondoRecibo').hidden=true}
   catch(e){avisar('No se pudo abrir el menú de compartir','err')}});
@@ -937,6 +958,11 @@ function pintarMedios(){
           <input type="text" data-i="${i}" data-c="dato" value="${m.dato||''}" placeholder="${m.id==='efectivo'?'Ej. Pago en la caseta':'Ej. 300 000 0000'}" style="padding:10px"></div>
         <div class="campo" style="margin-bottom:0"><label>Enlace de pago</label>
           <input type="text" data-i="${i}" data-c="link" value="${m.link||''}" placeholder="https://…" style="padding:10px"></div>
+        ${m.id==='nequi'?`<div class="qr-bloque chico" style="margin-top:12px">
+          <img src="qr_nequi.jpg" alt="QR Nequi">
+          <p class="nota" style="margin-top:8px">Este QR aparece en el recibo de pago cuando Nequi está activo,
+            con el botón "Enviar recibo con QR Nequi" para compartirlo junto con el texto por WhatsApp.</p>
+        </div>`:''}
       </div></div>`).join('');
   $$('#mediosPago input').forEach(inp=>inp.addEventListener('change',()=>{
     const m=cfg.medios[+inp.dataset.i];
