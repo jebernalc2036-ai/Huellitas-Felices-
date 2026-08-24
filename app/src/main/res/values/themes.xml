@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.Parqueadero" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ambar</item>
+        <item name="colorPrimaryDark">@color/asfalto</item>
+        <item name="colorAccent">@color/ambar</item>
+        <item name="android:statusBarColor">@color/asfalto</item>
+        <item name="android:navigationBarColor">@color/asfalto</item>
+        <item name="android:windowBackground">@color/asfalto</item>
+    </style>
+</resources>
