@@ -168,6 +168,21 @@ grant execute on function verificar_licencia(text, text) to anon, authenticated;
 -- ================================================================
 
 -- 2026-08-25 · agrega el tipo 'dia' (licencias cortas / de prueba)
-alter table licencias drop constraint if exists licencias_tipo_check;
-alter table licencias add constraint licencias_tipo_check
-  check (tipo in ('dia', 'mensual', 'alquiler', 'anual'));
+-- Busca y elimina la restricción existente sobre "tipo" sin depender de
+-- adivinar su nombre exacto (evita dejar dos restricciones activas a la vez).
+do $$
+declare
+  c record;
+begin
+  for c in
+    select conname from pg_constraint
+    where conrelid = 'licencias'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%tipo%'
+  loop
+    execute format('alter table licencias drop constraint %I', c.conname);
+  end loop;
+
+  alter table licencias add constraint licencias_tipo_check
+    check (tipo in ('dia', 'mensual', 'alquiler', 'anual'));
+end $$;
