@@ -121,8 +121,8 @@ td{padding:10px 8px;border-bottom:1px solid var(--linea);white-space:nowrap}
     <div class="campo"><label for="cEmail">Correo</label><input id="cEmail" type="email"></div>
     <div class="fila">
       <div class="campo"><label for="cTipo">Tipo de licencia</label>
-        <select id="cTipo"><option value="mensual">Mensual</option><option value="alquiler">Alquiler</option>
-          <option value="anual">Anual</option></select></div>
+        <select id="cTipo"><option value="dia">Día(s) / prueba</option><option value="mensual" selected>Mensual</option>
+          <option value="alquiler">Alquiler</option><option value="anual">Anual</option></select></div>
       <div class="campo"><label for="cValor">Valor</label><input id="cValor" type="number" min="0" step="1000"></div>
     </div>
     <div class="fila">
@@ -278,7 +278,7 @@ $('#btnNuevo').addEventListener('click', () => {
 });
 $('#btnCerrarNuevo').addEventListener('click', () => { $('#fondoNuevo').hidden = true; cargarLicencias(); });
 $('#cTipo').addEventListener('change', () => {
-  const dias = { mensual: 30, alquiler: 30, anual: 365 }[$('#cTipo').value] || 30;
+  const dias = { dia: 3, mensual: 30, alquiler: 30, anual: 365 }[$('#cTipo').value] || 30;
   $('#cVence').value = sumarDias($('#cInicio').value || hoy(), dias);
 });
 
@@ -311,7 +311,7 @@ function abrirPago(id) {
   if (!l) return;
   licenciaActual = l;
   $('#pagoInfo').textContent = `${l.clientes?.nombre_negocio || '—'} · vence ahora ${dFecha(l.fecha_vencimiento)}`;
-  const dias = { mensual: 30, alquiler: 30, anual: 365 }[l.tipo] || 30;
+  const dias = { dia: 3, mensual: 30, alquiler: 30, anual: 365 }[l.tipo] || 30;
   const base = new Date(l.fecha_vencimiento) < new Date(hoy()) ? hoy() : l.fecha_vencimiento;
   $('#pVence').value = sumarDias(base, dias);
   $('#pMonto').value = l.valor || '';

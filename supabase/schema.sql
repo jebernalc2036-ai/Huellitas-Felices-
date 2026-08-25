@@ -23,7 +23,7 @@ create table if not exists licencias (
   cliente_id uuid not null references clientes(id) on delete cascade,
   clave text not null unique
     default ('PQ-' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8))),
-  tipo text not null check (tipo in ('mensual', 'alquiler', 'anual')),
+  tipo text not null check (tipo in ('dia', 'mensual', 'alquiler', 'anual')),
   estado text not null default 'activa' check (estado in ('activa', 'suspendida', 'cancelada')),
   fecha_inicio date not null default current_date,
   fecha_vencimiento date not null,
@@ -159,3 +159,15 @@ grant execute on function verificar_licencia(text, text) to anon, authenticated;
 --   select verificar_licencia('<clave-devuelta>', 'dispositivo-prueba');
 --   -- debe devolver {"valido":true,"estado":"activa",...}
 -- ================================================================
+
+-- ================================================================
+-- Migraciones posteriores
+-- Si ya habías corrido el script de arriba antes de que existiera esta
+-- sección, corre solo los bloques nuevos que aún no hayas aplicado (son
+-- seguros de repetir, no dañan datos existentes).
+-- ================================================================
+
+-- 2026-08-25 · agrega el tipo 'dia' (licencias cortas / de prueba)
+alter table licencias drop constraint if exists licencias_tipo_check;
+alter table licencias add constraint licencias_tipo_check
+  check (tipo in ('dia', 'mensual', 'alquiler', 'anual'));
