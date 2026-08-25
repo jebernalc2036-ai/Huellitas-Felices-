@@ -2,6 +2,8 @@ package com.huellitasfelices.parqueadero
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -102,6 +104,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    inner class NequiBridge {
+        @JavascriptInterface
+        fun pagar(monto: String, numero: String) {
+            runOnUiThread {
+                try {
+                    val clipboard = getSystemService(ClipboardManager::class.java)
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Monto Nequi", monto))
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Monto $monto copiado · Pégalo en Nequi al enviar a $numero",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (e: Exception) {
+                    // Si falla el portapapeles, igual abrimos Nequi para que el operario digite el valor.
+                }
+
+                val nequiPkg = "com.nequi.MobileApp"
+                val intentApp = packageManager.getLaunchIntentForPackage(nequiPkg)
+                if (intentApp != null) {
+                    startActivity(intentApp)
+                    return@runOnUiThread
+                }
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$nequiPkg")))
+                } catch (e: ActivityNotFoundException) {
+                    abrirExterno(Uri.parse("https://play.google.com/store/apps/details?id=$nequiPkg"))
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -124,6 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(DescargaBridge(), "AndroidDownload")
         webView.addJavascriptInterface(CompartirBridge(), "AndroidShare")
+        webView.addJavascriptInterface(NequiBridge(), "AndroidNequi")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
