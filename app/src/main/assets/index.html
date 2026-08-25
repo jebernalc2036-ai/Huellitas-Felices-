@@ -407,10 +407,7 @@ nav button.on{color:var(--ambar)}
     <h2 id="rTitulo">Recibo</h2>
     <p class="nota" id="rDestino" style="margin-bottom:10px"></p>
     <div class="previa" id="rTexto"></div>
-    <div class="qr-bloque" id="rQrBloque" hidden>
-      <img id="rQrImg" src="qr_nequi.jpg" alt="QR Nequi">
-      <p class="nota" id="rQrLeyenda" style="margin-top:8px">QR Nequi</p>
-    </div>
+    <div id="rQrContenedor"></div>
     <div id="rPagosApps"></div>
     <p class="nota" id="rPagosNota" hidden style="margin:-4px 0 9px;text-align:center">Cada botón copia el valor y abre la app respectiva: pégalo y confirma con tu clave o huella.</p>
     <a class="btn wa" id="rWA" href="#" target="_blank" rel="noopener">
@@ -444,17 +441,22 @@ const TIPOS=[
  {id:'patineta',n:'Patineta',etq:'Patineta eléctrica',
   svg:'<circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M4 14h13l3-9M13 5h5"/>'}];
 
+/* Máscara completa de caracteres por tipo de vehículo (Colombia).
+   Carro: 3 letras + 3 números. Moto: 3 letras + 2 números + 1 letra.
+   Bici/patineta no tienen placa oficial: es solo un código interno del parqueadero. */
+const MASCARA_PLACA={carro:'ABC123',moto:'ABC12D',bicicleta:'BICI-01',patineta:'PAT-01'};
+
 /* Topes máximos por minuto · Bogotá, Decreto 026 de 2026 */
 const TOPES={carro:{normal:230,oro:253},moto:{normal:161,oro:177},bicicleta:{normal:10,oro:0},patineta:{normal:10,oro:10}};
 const TARIFAS_BASE={carro:{min:200,dia:22000,mes:180000},moto:{min:140,dia:11000,mes:90000},
   bicicleta:{min:10,dia:3000,mes:35000},patineta:{min:10,dia:3000,mes:35000}};
 const MEDIOS_BASE=[
   {id:'efectivo',n:'Efectivo en caja',on:true,dato:'',link:''},
-  {id:'nequi',n:'Nequi',on:true,dato:'3114980095',link:'',app:'com.nequi.MobileApp',marca:'#6a1b9a',txt:'#fff'},
-  {id:'daviplata',n:'Daviplata',on:true,dato:'',link:'',app:'com.davivienda.daviplataapp',marca:'#d0021b',txt:'#fff'},
-  {id:'pse',n:'PSE / botón de pago',on:false,dato:'',link:''},
-  {id:'transferencia',n:'Transferencia bancaria',on:false,dato:'',link:''},
-  {id:'qr',n:'Código QR Bancolombia',on:false,dato:'',link:'',app:'co.com.bancolombia.personas.superapp',marca:'#ffd100',txt:'#1a1a1a'}];
+  {id:'nequi',n:'Nequi',on:true,dato:'',link:'',qr:null,app:'com.nequi.MobileApp',marca:'#6a1b9a',txt:'#fff'},
+  {id:'daviplata',n:'Daviplata',on:true,dato:'',link:'',qr:null,app:'com.davivienda.daviplataapp',marca:'#d0021b',txt:'#fff'},
+  {id:'pse',n:'PSE / botón de pago',on:false,dato:'',link:'',qr:null},
+  {id:'transferencia',n:'Transferencia bancaria',on:false,dato:'',link:'',qr:null},
+  {id:'qr',n:'Código QR Bancolombia',on:false,dato:'',link:'',qr:null,app:'co.com.bancolombia.personas.superapp',marca:'#ffd100',txt:'#1a1a1a'}];
 
 const P_INGRESO=
 `🅿️ *{parqueadero}*
@@ -611,6 +613,14 @@ function iconoTarjeta(){
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 }
+function renderQrBloques(){
+  const cont=$('#rQrContenedor');
+  const activos=cfg.medios.filter(m=>m.on&&m.qr);
+  cont.innerHTML=activos.map(m=>`<div class="qr-bloque">
+    <img src="${m.qr}" alt="QR ${m.n}">
+    <p class="nota" style="margin-top:8px">QR ${m.n}${m.dato?' · '+m.dato:''}</p>
+  </div>`).join('');
+}
 function renderPagosApps(monto){
   const cont=$('#rPagosApps');
   const activos=(monto>0&&window.AndroidPagos&&window.AndroidPagos.pagar)
@@ -631,9 +641,7 @@ function abrirWA(cel,msg,titulo,monto){
   $('#rTexto').textContent=msg;
   $('#rWA').href=`https://wa.me/${n}?text=${encodeURIComponent(msg)}`;
   $('#rCompartir').hidden=!navigator.share;
-  const nequi=cfg.medios.find(m=>m.id==='nequi'&&m.on);
-  $('#rQrBloque').hidden=!nequi;
-  if(nequi)$('#rQrLeyenda').textContent='QR Nequi'+(nequi.dato?' · '+nequi.dato:'');
+  renderQrBloques();
   renderPagosApps(reciboMonto);
   $('#fondoRecibo').hidden=false;
 }
@@ -668,6 +676,7 @@ function pintarTipos(){
   $$('#tipos button').forEach(b=>b.addEventListener('click',()=>{tipoSel=b.dataset.t;pintarTipos()}));
   $('#mTipo').innerHTML=TIPOS.map(t=>`<option value="${t.id}">${t.n}</option>`).join('');
   $('#txtRecarga').textContent=textoTarifa(tipoSel,true).split('\n')[1]||'';
+  $('#placa').placeholder=MASCARA_PLACA[tipoSel]||'ABC123';
 }
 $('#chkElectrico').addEventListener('change',e=>{
   electricoSel=e.target.checked;$('#swElectrico').classList.toggle('on',electricoSel)});
@@ -978,6 +987,22 @@ $('#btnReglas').addEventListener('click',()=>{
   sCfg();revisarTopes();pintarTipos();avisar('Reglas guardadas','ok')});
 
 /* ═══════ AJUSTES · MEDIOS ═══════ */
+function leerImagenComoDataURL(archivo,maxLado,listo){
+  const lector=new FileReader();
+  lector.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxLado||h>maxLado){const esc=maxLado/Math.max(w,h);w=Math.round(w*esc);h=Math.round(h*esc)}
+      const lienzo=document.createElement('canvas');
+      lienzo.width=w;lienzo.height=h;
+      lienzo.getContext('2d').drawImage(img,0,0,w,h);
+      listo(lienzo.toDataURL('image/jpeg',0.85));
+    };
+    img.src=lector.result;
+  };
+  lector.readAsDataURL(archivo);
+}
 function pintarMedios(){
   $('#mediosPago').innerHTML=cfg.medios.map((m,i)=>`
     <div style="border:1px solid var(--linea);border-radius:10px;padding:12px;margin-bottom:10px">
@@ -991,16 +1016,26 @@ function pintarMedios(){
           <input type="text" data-i="${i}" data-c="link" value="${m.link||''}" placeholder="https://…" style="padding:10px"></div>
         ${m.app?`<p class="nota" style="margin-top:10px">En el recibo de pago aparece el botón "Pagar con ${m.n}":
           copia el valor al portapapeles y abre su app para completar el pago con tu validación.</p>`:''}
-        ${m.id==='nequi'?`<div class="qr-bloque chico" style="margin-top:12px">
-          <img src="qr_nequi.jpg" alt="QR Nequi">
-          <p class="nota" style="margin-top:8px">Este QR también aparece en el recibo de pago como alternativa
-            para que el cliente escanee y pague desde su propia app.</p>
-        </div>`:''}
+        <div class="campo" style="margin-top:12px;margin-bottom:0">
+          <label>Código QR (opcional)</label>
+          ${m.qr?`<div class="qr-bloque chico" style="margin-bottom:8px"><img src="${m.qr}" alt="QR ${m.n}"></div>`:''}
+          <input type="file" accept="image/*" data-qri="${i}" style="padding:8px">
+          <p class="nota" style="margin-top:6px">Sube una foto o captura del QR de tu propia cuenta de ${m.n}
+            (nadie más lo ve: se guarda solo en este celular). Aparece en el recibo de pago para que el cliente escanee.</p>
+          ${m.qr?`<button type="button" class="btn sec" data-qrquitar="${i}" style="margin-top:8px;padding:8px 13px;font-size:13px">Quitar QR</button>`:''}
+        </div>
       </div></div>`).join('');
-  $$('#mediosPago input').forEach(inp=>inp.addEventListener('change',()=>{
+  $$('#mediosPago input[data-c]').forEach(inp=>inp.addEventListener('change',()=>{
     const m=cfg.medios[+inp.dataset.i];
     m[inp.dataset.c]=inp.type==='checkbox'?inp.checked:inp.value.trim();
     sCfg();if(inp.dataset.c==='on'){pintarMedios();pintarMens()}else avisar('Medio de pago guardado','ok')}));
+  $$('#mediosPago input[type=file]').forEach(inp=>inp.addEventListener('change',e=>{
+    const archivo=e.target.files[0];if(!archivo)return;
+    leerImagenComoDataURL(archivo,500,dataUrl=>{
+      cfg.medios[+inp.dataset.qri].qr=dataUrl;sCfg();pintarMedios();avisar('QR guardado','ok')});
+  }));
+  $$('#mediosPago [data-qrquitar]').forEach(b=>b.addEventListener('click',()=>{
+    cfg.medios[+b.dataset.qrquitar].qr=null;sCfg();pintarMedios();avisar('QR eliminado')}));
 }
 
 /* ═══════ AJUSTES · DATOS ═══════ */
