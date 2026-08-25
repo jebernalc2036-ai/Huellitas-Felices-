@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--asfalto:#14171c;--panel:#1c2128;--panel2:#242b34;--linea:#333c48;--tinta:#eef0f3;--tinta2:#9aa5b2;
-  --ambar:#ffb300;--verde:#25d366;--rojo:#ff5a5a;--placa:#f5c518;--electro:#3fc9f5;--nequi:#6a1b9a;
+  --ambar:#ffb300;--verde:#25d366;--rojo:#ff5a5a;--placa:#f5c518;--electro:#3fc9f5;
   --safe-b:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--asfalto);color:var(--tinta);font-family:'Inter',system-ui,sans-serif;font-size:15px;
@@ -77,8 +77,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ambar);b
 .btn:active{transform:translateY(1px)}
 .btn.wa{background:var(--verde);color:#06301a;display:flex;align-items:center;justify-content:center;gap:9px}
 .btn.wa svg{width:21px;height:21px;fill:currentColor}
-.btn.nequi{background:var(--nequi);color:#fff;display:flex;align-items:center;justify-content:center;gap:9px}
-.btn.nequi svg{width:21px;height:21px;flex:none}
+#rPagosApps{display:flex;flex-direction:column;gap:9px}
+#rPagosApps:not(:empty){margin-bottom:9px}
+.btn.pago{display:flex;align-items:center;justify-content:center;gap:9px}
+.btn.pago svg{width:21px;height:21px;flex:none}
 .btn.sec{background:var(--panel2);color:var(--tinta);border:1px solid var(--linea);font-size:15px;padding:12px}
 .btn.roja{background:transparent;color:var(--rojo);border:1px solid var(--rojo);font-size:14px;padding:11px}
 .btn+.btn,.fila+.btn,.btn+.fila{margin-top:9px}
@@ -144,7 +146,7 @@ nav button.on{color:var(--ambar)}
 .previa{background:#0f1419;border:1px solid var(--linea);border-radius:10px;padding:13px;margin-bottom:14px;
   font-family:'JetBrains Mono';font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;
   max-height:34vh;overflow-y:auto;color:#cfd6df}
-.simul{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.simul{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:6px;margin-bottom:12px}
 .simul button{background:var(--panel2);border:1px solid var(--linea);border-radius:9px;padding:9px 2px;
   font-family:'Barlow Condensed';text-transform:uppercase;font-size:12px;color:var(--tinta2)}
 .simul button.on{background:rgba(255,179,0,.15);border-color:var(--ambar);color:var(--ambar)}
@@ -409,12 +411,8 @@ nav button.on{color:var(--ambar)}
       <img id="rQrImg" src="qr_nequi.jpg" alt="QR Nequi">
       <p class="nota" id="rQrLeyenda" style="margin-top:8px">QR Nequi</p>
     </div>
-    <button class="btn nequi" id="rPagarNequi" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-      <span id="rPagarNequiTxt">Pagar con Nequi</span></button>
-    <p class="nota" id="rPagarNequiNota" hidden style="margin:-4px 0 9px;text-align:center">Copia el valor y abre Nequi: pégalo y confirma con tu clave o huella.</p>
+    <div id="rPagosApps"></div>
+    <p class="nota" id="rPagosNota" hidden style="margin:-4px 0 9px;text-align:center">Cada botón copia el valor y abre la app respectiva: pégalo y confirma con tu clave o huella.</p>
     <a class="btn wa" id="rWA" href="#" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.7 15l-1.3 5 5.1-1.3A10 10 0 1012 2zm5.6 14.1c-.2.7-1.4 1.3-1.9 1.3-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.4.7-.4h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.4.5-.3.3c-.1.1-.2.3 0 .5.2.3.8 1.3 1.7 2.1 1.1 1 2 1.3 2.3 1.4.2.1.4.1.5-.1l.8-.9c.2-.2.3-.2.5-.1l2 .9c.2.1.4.2.4.3.1.2.1.7-.1 1.3z"/></svg>
       Abrir WhatsApp (recibo)</a>
@@ -452,11 +450,11 @@ const TARIFAS_BASE={carro:{min:200,dia:22000,mes:180000},moto:{min:140,dia:11000
   bicicleta:{min:10,dia:3000,mes:35000},patineta:{min:10,dia:3000,mes:35000}};
 const MEDIOS_BASE=[
   {id:'efectivo',n:'Efectivo en caja',on:true,dato:'',link:''},
-  {id:'nequi',n:'Nequi',on:true,dato:'3114980095',link:''},
-  {id:'daviplata',n:'Daviplata',on:true,dato:'',link:''},
+  {id:'nequi',n:'Nequi',on:true,dato:'3114980095',link:'',app:'com.nequi.MobileApp',marca:'#6a1b9a',txt:'#fff'},
+  {id:'daviplata',n:'Daviplata',on:true,dato:'',link:'',app:'com.davivienda.daviplataapp',marca:'#d0021b',txt:'#fff'},
   {id:'pse',n:'PSE / botón de pago',on:false,dato:'',link:''},
   {id:'transferencia',n:'Transferencia bancaria',on:false,dato:'',link:''},
-  {id:'qr',n:'Código QR Bancolombia',on:false,dato:'',link:''}];
+  {id:'qr',n:'Código QR Bancolombia',on:false,dato:'',link:'',app:'co.com.bancolombia.personas.superapp',marca:'#ffd100',txt:'#1a1a1a'}];
 
 const P_INGRESO=
 `🅿️ *{parqueadero}*
@@ -609,6 +607,22 @@ function datosRecibo(reg,liq){
     medios:bloqueMedios(liq?liq.total:0),operario:cfg.operario,fecha:fechaHora(Date.now())};
 }
 let reciboActual='',reciboMonto=0;
+function iconoTarjeta(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+}
+function renderPagosApps(monto){
+  const cont=$('#rPagosApps');
+  const activos=(monto>0&&window.AndroidPagos&&window.AndroidPagos.pagar)
+    ?cfg.medios.filter(m=>m.on&&m.app):[];
+  cont.innerHTML=activos.map(m=>`<button class="btn pago" data-medio="${m.id}" style="background:${m.marca||'#333c48'};color:${m.txt||'#fff'}">
+    ${iconoTarjeta()}Pagar ${pesos(monto)} con ${m.n}</button>`).join('');
+  $('#rPagosNota').hidden=!activos.length;
+  cont.querySelectorAll('button[data-medio]').forEach(b=>b.addEventListener('click',()=>{
+    const medio=cfg.medios.find(x=>x.id===b.dataset.medio);
+    if(medio&&medio.app)window.AndroidPagos.pagar(String(Math.round(monto)),medio.dato||'',medio.app);
+  }));
+}
 function abrirWA(cel,msg,titulo,monto){
   reciboActual=msg;reciboMonto=monto||0;const n=celular(cel);
   $('#rTitulo').textContent=titulo||'Recibo';
@@ -620,21 +634,12 @@ function abrirWA(cel,msg,titulo,monto){
   const nequi=cfg.medios.find(m=>m.id==='nequi'&&m.on);
   $('#rQrBloque').hidden=!nequi;
   if(nequi)$('#rQrLeyenda').textContent='QR Nequi'+(nequi.dato?' · '+nequi.dato:'');
-  const puedeNequi=!!(nequi&&reciboMonto>0&&window.AndroidNequi&&window.AndroidNequi.pagar);
-  $('#rPagarNequi').hidden=!puedeNequi;
-  $('#rPagarNequiNota').hidden=!puedeNequi;
-  if(puedeNequi)$('#rPagarNequiTxt').textContent=`Pagar ${pesos(reciboMonto)} con Nequi`;
+  renderPagosApps(reciboMonto);
   $('#fondoRecibo').hidden=false;
 }
 $('#rCerrar').addEventListener('click',()=>$('#fondoRecibo').hidden=true);
 $('#fondoRecibo').addEventListener('click',e=>{if(e.target.id==='fondoRecibo')$('#fondoRecibo').hidden=true});
 $('#rWA').addEventListener('click',()=>setTimeout(()=>$('#fondoRecibo').hidden=true,600));
-$('#rPagarNequi').addEventListener('click',()=>{
-  if(window.AndroidNequi&&window.AndroidNequi.pagar){
-    const nequi=cfg.medios.find(m=>m.id==='nequi'&&m.on);
-    window.AndroidNequi.pagar(String(Math.round(reciboMonto)),(nequi&&nequi.dato)||'');
-  }
-});
 $('#rCompartir').addEventListener('click',async()=>{
   try{await navigator.share({text:reciboActual});$('#fondoRecibo').hidden=true}
   catch(e){avisar('No se pudo abrir el menú de compartir','err')}});
@@ -736,16 +741,29 @@ function tarjetaAuto(i){
 }
 function mostrarLiquidacion(id,simMin){
   const reg=ingresos.find(i=>i.id===id);if(!reg)return;
-  const fin=simMin?reg.entrada+simMin*60000:Date.now();
+  const esMens=simMin==='mes';
+  const fin=esMens?reg.entrada:(simMin?reg.entrada+simMin*60000:Date.now());
   const kwh=reg.kwh||0;
-  const liq=liquidar(reg.entrada,fin,reg.tipo,reg.placa,reg.electrico,kwh);
+  let liq;
+  if(esMens){
+    const tm=tarifas[reg.tipo]||tarifas.carro,lineas=[`Mensualidad completa: ${pesos(tm.mes)}`];
+    let total=tm.mes,recarga=0;
+    if(reg.electrico){
+      recarga=cfg.recarga.mes||0;
+      lineas.push(recarga?`Recarga eléctrica ilimitada: + ${pesos(recarga)}`:'Recarga eléctrica no incluida en la mensualidad');
+      total+=recarga;
+    }
+    liq={total,parqueo:tm.mes,recarga,min:0,lineas,mens:false};
+  }else{
+    liq=liquidar(reg.entrada,fin,reg.tipo,reg.placa,reg.electrico,kwh);
+  }
   const t=TIPOS.find(x=>x.id===reg.tipo),medios=cfg.medios.filter(m=>m.on);
 
   $('#panelLiq').innerHTML=`
    <div class="tarjeta">
      <h2>Recibo ${reg.recibo} <span class="n">${reg.placa}</span></h2>
      <p class="nota">${t?t.etq:reg.tipo}${reg.electrico?' · <span class="chip el">recarga eléctrica</span>':''}
-       · entró ${fechaHora(reg.entrada)} · ${dur(fin-reg.entrada)}
+       · entró ${fechaHora(reg.entrada)} · ${esMens?'tarifa mensual':dur(fin-reg.entrada)}
        ${reg.celular?'· cel '+reg.celular:'· <span class="chip ro">sin celular</span>'}</p>
      ${reg.electrico&&cfg.recarga.modo==='kwh'?`<div class="campo"><label for="inKwh">Energía entregada (kWh)</label>
        <input id="inKwh" type="number" min="0" step="0.1" value="${kwh}" inputmode="decimal"></div>`:''}
@@ -757,7 +775,8 @@ function mostrarLiquidacion(id,simMin){
        <button data-m="0" class="${!simMin?'on':''}">Real</button>
        <button data-m="60" class="${simMin===60?'on':''}">1 hora</button>
        <button data-m="180" class="${simMin===180?'on':''}">3 horas</button>
-       <button data-m="1500" class="${simMin===1500?'on':''}">1 día</button></div>
+       <button data-m="1500" class="${simMin===1500?'on':''}">1 día</button>
+       <button data-m="mes" class="${esMens?'on':''}">Mensual</button></div>
      <div class="campo"><label for="medioPago">Medio de pago</label>
        <select id="medioPago">${medios.map(m=>`<option value="${m.id}">${m.n}</option>`).join('')}
          <option value="cortesia">Cortesía</option></select></div>
@@ -770,7 +789,9 @@ function mostrarLiquidacion(id,simMin){
 
   if($('#inKwh'))$('#inKwh').addEventListener('change',()=>{
     reg.kwh=+$('#inKwh').value||0;sIng();mostrarLiquidacion(id,simMin)});
-  $$('#panelLiq .simul button').forEach(b=>b.addEventListener('click',()=>mostrarLiquidacion(id,+b.dataset.m||0)));
+  $$('#panelLiq .simul button').forEach(b=>b.addEventListener('click',()=>{
+    const v=b.dataset.m;mostrarLiquidacion(id,v==='mes'?'mes':(+v||0));
+  }));
   $('#btnActualizar').addEventListener('click',()=>{mostrarLiquidacion(id);avisar('Valor recalculado a esta hora')});
   $('#btnCerrarLiq').addEventListener('click',()=>$('#panelLiq').innerHTML='');
   $('#btnEnviarPago').addEventListener('click',()=>{
@@ -961,16 +982,19 @@ function pintarMedios(){
   $('#mediosPago').innerHTML=cfg.medios.map((m,i)=>`
     <div style="border:1px solid var(--linea);border-radius:10px;padding:12px;margin-bottom:10px">
       <label style="display:flex;gap:9px;align-items:center;text-transform:none;letter-spacing:0;font-size:15px;color:var(--tinta);margin-bottom:${m.on?'10px':'0'}">
-        <input type="checkbox" data-i="${i}" data-c="on" ${m.on?'checked':''} style="width:20px;height:20px;flex:none"><b>${m.n}</b></label>
+        <input type="checkbox" data-i="${i}" data-c="on" ${m.on?'checked':''} style="width:20px;height:20px;flex:none"><b>${m.n}</b>
+        ${m.app?`<span class="chip" style="margin-left:auto;background:${m.marca||'var(--panel2)'};color:${m.txt||'#fff'}">Pago con app</span>`:''}</label>
       <div ${m.on?'':'hidden'}>
         <div class="campo" style="margin-bottom:8px"><label>Número o cuenta</label>
           <input type="text" data-i="${i}" data-c="dato" value="${m.dato||''}" placeholder="${m.id==='efectivo'?'Ej. Pago en la caseta':'Ej. 300 000 0000'}" style="padding:10px"></div>
         <div class="campo" style="margin-bottom:0"><label>Enlace de pago</label>
           <input type="text" data-i="${i}" data-c="link" value="${m.link||''}" placeholder="https://…" style="padding:10px"></div>
+        ${m.app?`<p class="nota" style="margin-top:10px">En el recibo de pago aparece el botón "Pagar con ${m.n}":
+          copia el valor al portapapeles y abre su app para completar el pago con tu validación.</p>`:''}
         ${m.id==='nequi'?`<div class="qr-bloque chico" style="margin-top:12px">
           <img src="qr_nequi.jpg" alt="QR Nequi">
-          <p class="nota" style="margin-top:8px">Este QR aparece en el recibo de pago cuando Nequi está activo,
-            con el botón "Enviar recibo con QR Nequi" para compartirlo junto con el texto por WhatsApp.</p>
+          <p class="nota" style="margin-top:8px">Este QR también aparece en el recibo de pago como alternativa
+            para que el cliente escanee y pague desde su propia app.</p>
         </div>`:''}
       </div></div>`).join('');
   $$('#mediosPago input').forEach(inp=>inp.addEventListener('change',()=>{

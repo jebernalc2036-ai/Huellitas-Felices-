@@ -104,32 +104,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    inner class NequiBridge {
+    inner class PagosBridge {
         @JavascriptInterface
-        fun pagar(monto: String, numero: String) {
+        fun pagar(monto: String, numero: String, paquete: String) {
             runOnUiThread {
                 try {
                     val clipboard = getSystemService(ClipboardManager::class.java)
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Monto Nequi", monto))
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Monto", monto))
+                    val destino = if (numero.isNotBlank()) " al enviar a $numero" else ""
                     Toast.makeText(
                         this@MainActivity,
-                        "Monto $monto copiado · Pégalo en Nequi al enviar a $numero",
+                        "Monto $monto copiado · Pégalo$destino",
                         Toast.LENGTH_LONG
                     ).show()
                 } catch (e: Exception) {
-                    // Si falla el portapapeles, igual abrimos Nequi para que el operario digite el valor.
+                    // Si falla el portapapeles, igual abrimos la app para que el operario digite el valor.
                 }
 
-                val nequiPkg = "com.nequi.MobileApp"
-                val intentApp = packageManager.getLaunchIntentForPackage(nequiPkg)
+                val intentApp = packageManager.getLaunchIntentForPackage(paquete)
                 if (intentApp != null) {
                     startActivity(intentApp)
                     return@runOnUiThread
                 }
                 try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$nequiPkg")))
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$paquete")))
                 } catch (e: ActivityNotFoundException) {
-                    abrirExterno(Uri.parse("https://play.google.com/store/apps/details?id=$nequiPkg"))
+                    abrirExterno(Uri.parse("https://play.google.com/store/apps/details?id=$paquete"))
                 }
             }
         }
@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(DescargaBridge(), "AndroidDownload")
         webView.addJavascriptInterface(CompartirBridge(), "AndroidShare")
-        webView.addJavascriptInterface(NequiBridge(), "AndroidNequi")
+        webView.addJavascriptInterface(PagosBridge(), "AndroidPagos")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {

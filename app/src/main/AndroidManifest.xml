@@ -5,6 +5,8 @@
 
     <queries>
         <package android:name="com.nequi.MobileApp" />
+        <package android:name="com.davivienda.daviplataapp" />
+        <package android:name="co.com.bancolombia.personas.superapp" />
     </queries>
 
     <application
