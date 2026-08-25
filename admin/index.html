@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administrador · Licencias Parqueadero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#14171c;--panel:#1c2128;--panel2:#242b34;--linea:#333c48;--tinta:#eef0f3;--tinta2:#9aa5b2;
+  --ambar:#ffb300;--verde:#25d366;--rojo:#ff5a5a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tinta);font-family:'Inter',system-ui,sans-serif;font-size:15px;min-height:100vh}
+button,input,select{font-family:inherit;font-size:15px;color:inherit}
+button{cursor:pointer;border:none;background:none}
+h1,h2{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.mono{font-family:'JetBrains Mono',monospace}
+header{background:var(--panel);border-bottom:3px solid var(--ambar);padding:14px 18px;display:flex;align-items:center;gap:10px}
+header h1{font-size:19px}
+header .icono{width:22px;height:22px;border-radius:5px;background:repeating-linear-gradient(135deg,var(--ambar) 0 5px,#14171c 5px 10px)}
+header button{margin-left:auto;background:var(--panel2);border:1px solid var(--linea);border-radius:8px;padding:8px 14px;font-size:13px}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 60px}
+.aviso{background:rgba(255,90,90,.12);border:1px solid var(--rojo);color:#ffb3b3;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.6}
+.tarjeta{background:var(--panel);border:1px solid var(--linea);border-radius:12px;padding:18px;margin-bottom:16px}
+.campo{margin-bottom:12px}
+label{display:block;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--tinta2);margin-bottom:5px}
+input,select{width:100%;background:var(--panel2);border:1px solid var(--linea);border-radius:9px;padding:10px 12px;color:var(--tinta)}
+input:focus,select:focus{outline:none;border-color:var(--ambar)}
+.btn{display:inline-block;padding:11px 18px;border-radius:9px;font-family:'Barlow Condensed';text-transform:uppercase;
+  letter-spacing:.06em;font-size:15px;font-weight:700;background:var(--ambar);color:#14171c}
+.btn.sec{background:var(--panel2);color:var(--tinta);border:1px solid var(--linea);font-size:13px;padding:8px 13px}
+.btn.roja{background:transparent;color:var(--rojo);border:1px solid var(--rojo)}
+.btn.verde{background:var(--verde);color:#06301a}
+.fila{display:flex;gap:10px;flex-wrap:wrap}
+.fila>*{flex:1;min-width:140px}
+#vistaLogin{max-width:380px;margin:60px auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--linea);border-top:3px solid var(--ambar);border-radius:11px;padding:12px}
+.stat span{font-family:'Barlow Condensed';text-transform:uppercase;font-size:11px;color:var(--tinta2)}
+.stat b{display:block;font-family:'JetBrains Mono';font-size:22px;margin-top:2px}
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:180px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:'Barlow Condensed';text-transform:uppercase;font-size:11px;letter-spacing:.05em;color:var(--tinta2);
+  text-align:left;padding:8px 8px;border-bottom:1px solid var(--linea);white-space:nowrap}
+td{padding:10px 8px;border-bottom:1px solid var(--linea);white-space:nowrap}
+.chip{display:inline-block;font-family:'Barlow Condensed';text-transform:uppercase;font-size:11px;letter-spacing:.06em;
+  padding:3px 10px;border-radius:20px;background:rgba(37,211,102,.16);color:var(--verde)}
+.chip.am{background:rgba(255,179,0,.16);color:var(--ambar)}
+.chip.ro{background:rgba(255,90,90,.16);color:var(--rojo)}
+.vacio{text-align:center;padding:30px;color:var(--tinta2)}
+.fondo{position:fixed;inset:0;background:rgba(8,10,13,.86);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.fondo[hidden]{display:none}
+.modal{background:var(--panel);border:1px solid var(--linea);border-radius:14px;width:100%;max-width:460px;
+  max-height:88vh;overflow-y:auto;padding:20px}
+.modal h2{font-size:18px;margin-bottom:14px}
+.nota{font-size:12px;color:var(--tinta2);line-height:1.6;margin-top:8px}
+.claveGenerada{background:var(--panel2);border:1px dashed var(--ambar);border-radius:10px;padding:14px;text-align:center;margin-top:10px}
+.claveGenerada .mono{font-size:22px;color:var(--ambar);font-weight:700}
+.msg{font-size:13px;padding:10px;border-radius:8px;margin-top:10px}
+.msg.err{background:rgba(255,90,90,.12);color:#ffb3b3}
+.msg.ok{background:rgba(37,211,102,.12);color:#8ff0ba}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icono"></div>
+  <h1>Licencias · Parqueadero</h1>
+  <button id="btnSalir" hidden>Cerrar sesión</button>
+</header>
+
+<main>
+  <div id="avisoConfig" class="aviso" hidden>
+    <b>Falta configurar Supabase.</b> Abre este archivo (<span class="mono">admin/index.html</span>),
+    busca <span class="mono">SUPABASE_URL</span> y <span class="mono">SUPABASE_ANON_KEY</span> cerca del final
+    y reemplázalos por los valores de tu proyecto (Supabase → Settings → API).
+  </div>
+
+  <section id="vistaLogin">
+    <div class="tarjeta">
+      <h2 style="margin-bottom:14px">Iniciar sesión</h2>
+      <div class="campo"><label for="loginEmail">Correo</label><input id="loginEmail" type="email" autocomplete="username"></div>
+      <div class="campo"><label for="loginPass">Contraseña</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+      <button class="btn" id="btnLogin" style="width:100%">Entrar</button>
+      <div id="loginMsg"></div>
+    </div>
+  </section>
+
+  <section id="vistaPanel" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input id="buscar" type="text" placeholder="Buscar por negocio, contacto o clave…">
+      <button class="btn" id="btnNuevo">Nuevo cliente</button>
+    </div>
+    <div class="tarjeta">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>Negocio</th><th>Contacto</th><th>Clave</th><th>Tipo</th>
+            <th>Vence</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tabla"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Nuevo cliente + licencia -->
+<div class="fondo" id="fondoNuevo" hidden>
+  <div class="modal">
+    <h2>Nuevo cliente</h2>
+    <div class="campo"><label for="cNombre">Negocio</label><input id="cNombre" type="text" placeholder="Parqueadero Central"></div>
+    <div class="fila">
+      <div class="campo"><label for="cContacto">Contacto</label><input id="cContacto" type="text"></div>
+      <div class="campo"><label for="cCelular">Celular</label><input id="cCelular" type="tel"></div>
+    </div>
+    <div class="campo"><label for="cEmail">Correo</label><input id="cEmail" type="email"></div>
+    <div class="fila">
+      <div class="campo"><label for="cTipo">Tipo de licencia</label>
+        <select id="cTipo"><option value="mensual">Mensual</option><option value="alquiler">Alquiler</option>
+          <option value="anual">Anual</option></select></div>
+      <div class="campo"><label for="cValor">Valor</label><input id="cValor" type="number" min="0" step="1000"></div>
+    </div>
+    <div class="fila">
+      <div class="campo"><label for="cInicio">Inicio</label><input id="cInicio" type="date"></div>
+      <div class="campo"><label for="cVence">Vence</label><input id="cVence" type="date"></div>
+    </div>
+    <button class="btn" id="btnCrear" style="width:100%">Crear cliente y licencia</button>
+    <div id="crearResultado"></div>
+    <button class="btn sec" id="btnCerrarNuevo" style="width:100%;margin-top:10px">Cerrar</button>
+  </div>
+</div>
+
+<!-- Registrar pago -->
+<div class="fondo" id="fondoPago" hidden>
+  <div class="modal">
+    <h2>Registrar pago</h2>
+    <p class="nota" id="pagoInfo" style="margin-bottom:10px"></p>
+    <div class="fila">
+      <div class="campo"><label for="pMonto">Monto</label><input id="pMonto" type="number" min="0" step="1000"></div>
+      <div class="campo"><label for="pMedio">Medio</label>
+        <select id="pMedio"><option>Efectivo</option><option>Nequi</option><option>Daviplata</option>
+          <option>Transferencia</option><option>Otro</option></select></div>
+    </div>
+    <div class="campo"><label for="pVence">Nueva fecha de vencimiento</label><input id="pVence" type="date"></div>
+    <div class="campo"><label for="pNota">Nota</label><input id="pNota" type="text" placeholder="Opcional"></div>
+    <button class="btn verde" id="btnRegistrarPago" style="width:100%">Registrar pago y renovar</button>
+    <div id="pagoMsg"></div>
+    <button class="btn sec" id="btnCerrarPago" style="width:100%;margin-top:10px">Cerrar</button>
+  </div>
+</div>
+
+<!-- Historial -->
+<div class="fondo" id="fondoHistorial" hidden>
+  <div class="modal">
+    <h2>Historial de pagos</h2>
+    <div id="historialLista"></div>
+    <button class="btn sec" id="btnCerrarHistorial" style="width:100%;margin-top:14px">Cerrar</button>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ══════════════════════════════════════════════════════════════
+// Reemplaza estos dos valores por los de tu proyecto Supabase
+// (Supabase → tu proyecto → Settings → API)
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+const SUPABASE_ANON_KEY = 'TU-ANON-KEY';
+
+if (SUPABASE_URL.includes('TU-PROYECTO') || SUPABASE_ANON_KEY.includes('TU-ANON-KEY')) {
+  document.getElementById('avisoConfig').hidden = false;
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = s => document.querySelector(s);
+const pesos = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
+const hoy = () => new Date().toISOString().slice(0, 10);
+const dFecha = d => d ? new Date(d + 'T12:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+const sumarDias = (d, n) => { const f = new Date(d + 'T12:00'); f.setDate(f.getDate() + n); return f.toISOString().slice(0, 10); };
+
+let licencias = [];
+
+// ---------- Sesión ----------
+supabase.auth.onAuthStateChange((_ev, session) => mostrarSesion(session));
+supabase.auth.getSession().then(({ data }) => mostrarSesion(data.session));
+
+function mostrarSesion(session) {
+  const activa = !!session;
+  $('#vistaLogin').hidden = activa;
+  $('#vistaPanel').hidden = !activa;
+  $('#btnSalir').hidden = !activa;
+  if (activa) cargarLicencias();
+}
+
+$('#btnLogin').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: $('#loginEmail').value.trim(), password: $('#loginPass').value
+  });
+  $('#loginMsg').innerHTML = error ? `<div class="msg err">${error.message}</div>` : '';
+});
+$('#btnSalir').addEventListener('click', () => supabase.auth.signOut());
+
+// ---------- Cargar y pintar ----------
+async function cargarLicencias() {
+  const { data, error } = await supabase
+    .from('licencias')
+    .select('*, clientes(id,nombre_negocio,contacto,celular,email)')
+    .order('fecha_vencimiento', { ascending: true });
+  if (error) { alert('Error al cargar: ' + error.message); return; }
+  licencias = data || [];
+  pintarStats();
+  pintarTabla();
+}
+
+function estadoVisual(l) {
+  if (l.estado === 'suspendida') return { texto: 'Suspendida', clase: 'ro' };
+  if (l.estado === 'cancelada') return { texto: 'Cancelada', clase: 'ro' };
+  const dias = Math.floor((new Date(l.fecha_vencimiento) - new Date(hoy())) / 86400000);
+  if (dias < 0) return { texto: 'Vencida', clase: 'ro' };
+  if (dias <= 7) return { texto: `Vence en ${dias}d`, clase: 'am' };
+  return { texto: 'Activa', clase: '' };
+}
+
+function pintarStats() {
+  const activas = licencias.filter(l => estadoVisual(l).clase === '').length;
+  const porVencer = licencias.filter(l => estadoVisual(l).clase === 'am').length;
+  const problema = licencias.filter(l => estadoVisual(l).clase === 'ro').length;
+  $('#stats').innerHTML = `
+    <div class="stat"><span>Clientes</span><b>${licencias.length}</b></div>
+    <div class="stat"><span>Activas</span><b style="color:var(--verde)">${activas}</b></div>
+    <div class="stat"><span>Por vencer</span><b style="color:var(--ambar)">${porVencer}</b></div>
+    <div class="stat"><span>Vencidas/susp.</span><b style="color:var(--rojo)">${problema}</b></div>`;
+}
+
+function pintarTabla() {
+  const q = ($('#buscar').value || '').toLowerCase();
+  const lista = licencias.filter(l => !q ||
+    (l.clientes?.nombre_negocio || '').toLowerCase().includes(q) ||
+    (l.clientes?.contacto || '').toLowerCase().includes(q) ||
+    (l.clave || '').toLowerCase().includes(q));
+
+  $('#tabla').innerHTML = lista.length ? lista.map(l => {
+    const e = estadoVisual(l);
+    return `<tr>
+      <td><b>${l.clientes?.nombre_negocio || '—'}</b></td>
+      <td>${l.clientes?.contacto || '—'}${l.clientes?.celular ? '<br><span style="color:var(--tinta2)">' + l.clientes.celular + '</span>' : ''}</td>
+      <td class="mono" style="color:var(--ambar)">${l.clave}</td>
+      <td>${l.tipo}</td>
+      <td>${dFecha(l.fecha_vencimiento)}</td>
+      <td><span class="chip ${e.clase}">${e.texto}</span></td>
+      <td>
+        <button class="btn sec" data-pago="${l.id}">Pago</button>
+        <button class="btn sec" data-hist="${l.id}">Historial</button>
+        <button class="btn sec" data-toggle="${l.id}">${l.estado === 'suspendida' ? 'Reactivar' : 'Suspender'}</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="vacio">Sin clientes todavía. Crea el primero arriba.</td></tr>`;
+
+  $$('[data-pago]').forEach(b => b.addEventListener('click', () => abrirPago(b.dataset.pago)));
+  $$('[data-hist]').forEach(b => b.addEventListener('click', () => abrirHistorial(b.dataset.hist)));
+  $$('[data-toggle]').forEach(b => b.addEventListener('click', () => toggleSuspender(b.dataset.toggle)));
+}
+function $$(sel) { return [...document.querySelectorAll(sel)]; }
+$('#buscar').addEventListener('input', pintarTabla);
+
+// ---------- Nuevo cliente + licencia ----------
+$('#btnNuevo').addEventListener('click', () => {
+  $('#cInicio').value = hoy();
+  $('#cVence').value = sumarDias(hoy(), 30);
+  $('#crearResultado').innerHTML = '';
+  $('#fondoNuevo').hidden = false;
+});
+$('#btnCerrarNuevo').addEventListener('click', () => { $('#fondoNuevo').hidden = true; cargarLicencias(); });
+$('#cTipo').addEventListener('change', () => {
+  const dias = { mensual: 30, alquiler: 30, anual: 365 }[$('#cTipo').value] || 30;
+  $('#cVence').value = sumarDias($('#cInicio').value || hoy(), dias);
+});
+
+$('#btnCrear').addEventListener('click', async () => {
+  const nombre = $('#cNombre').value.trim();
+  if (!nombre) { $('#crearResultado').innerHTML = '<div class="msg err">El negocio es obligatorio</div>'; return; }
+  const { data: cliente, error: e1 } = await supabase.from('clientes').insert({
+    nombre_negocio: nombre, contacto: $('#cContacto').value.trim(),
+    celular: $('#cCelular').value.trim(), email: $('#cEmail').value.trim()
+  }).select().single();
+  if (e1) { $('#crearResultado').innerHTML = `<div class="msg err">${e1.message}</div>`; return; }
+
+  const { data: licencia, error: e2 } = await supabase.from('licencias').insert({
+    cliente_id: cliente.id, tipo: $('#cTipo').value,
+    fecha_inicio: $('#cInicio').value || hoy(), fecha_vencimiento: $('#cVence').value,
+    valor: +$('#cValor').value || null
+  }).select().single();
+  if (e2) { $('#crearResultado').innerHTML = `<div class="msg err">${e2.message}</div>`; return; }
+
+  $('#crearResultado').innerHTML = `<div class="claveGenerada">
+    <div class="nota">Clave de activación — envíasela al cliente por WhatsApp</div>
+    <div class="mono">${licencia.clave}</div></div>`;
+  ['cNombre', 'cContacto', 'cCelular', 'cEmail', 'cValor'].forEach(id => $('#' + id).value = '');
+});
+
+// ---------- Registrar pago ----------
+let licenciaActual = null;
+function abrirPago(id) {
+  const l = licencias.find(x => x.id === id);
+  if (!l) return;
+  licenciaActual = l;
+  $('#pagoInfo').textContent = `${l.clientes?.nombre_negocio || '—'} · vence ahora ${dFecha(l.fecha_vencimiento)}`;
+  const dias = { mensual: 30, alquiler: 30, anual: 365 }[l.tipo] || 30;
+  const base = new Date(l.fecha_vencimiento) < new Date(hoy()) ? hoy() : l.fecha_vencimiento;
+  $('#pVence').value = sumarDias(base, dias);
+  $('#pMonto').value = l.valor || '';
+  $('#pagoMsg').innerHTML = '';
+  $('#fondoPago').hidden = false;
+}
+$('#btnCerrarPago').addEventListener('click', () => { $('#fondoPago').hidden = true; cargarLicencias(); });
+
+$('#btnRegistrarPago').addEventListener('click', async () => {
+  if (!licenciaActual) return;
+  const monto = +$('#pMonto').value || 0;
+  const nuevaVence = $('#pVence').value;
+  if (!nuevaVence) { $('#pagoMsg').innerHTML = '<div class="msg err">Falta la nueva fecha de vencimiento</div>'; return; }
+
+  const { error: e1 } = await supabase.from('pagos').insert({
+    licencia_id: licenciaActual.id, monto, medio: $('#pMedio').value,
+    periodo_desde: licenciaActual.fecha_vencimiento, periodo_hasta: nuevaVence,
+    nota: $('#pNota').value.trim()
+  });
+  if (e1) { $('#pagoMsg').innerHTML = `<div class="msg err">${e1.message}</div>`; return; }
+
+  const { error: e2 } = await supabase.from('licencias').update({
+    fecha_vencimiento: nuevaVence, estado: 'activa'
+  }).eq('id', licenciaActual.id);
+  if (e2) { $('#pagoMsg').innerHTML = `<div class="msg err">${e2.message}</div>`; return; }
+
+  $('#pagoMsg').innerHTML = '<div class="msg ok">Pago registrado y licencia renovada</div>';
+  await cargarLicencias();
+});
+
+// ---------- Suspender / reactivar ----------
+async function toggleSuspender(id) {
+  const l = licencias.find(x => x.id === id);
+  if (!l) return;
+  const nuevoEstado = l.estado === 'suspendida' ? 'activa' : 'suspendida';
+  if (!confirm(`¿${nuevoEstado === 'suspendida' ? 'Suspender' : 'Reactivar'} la licencia de ${l.clientes?.nombre_negocio}?`)) return;
+  const { error } = await supabase.from('licencias').update({ estado: nuevoEstado }).eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  cargarLicencias();
+}
+
+// ---------- Historial ----------
+async function abrirHistorial(id) {
+  const { data, error } = await supabase.from('pagos').select('*').eq('licencia_id', id).order('fecha', { ascending: false });
+  $('#historialLista').innerHTML = error
+    ? `<div class="msg err">${error.message}</div>`
+    : (data.length ? data.map(p => `<div class="tarjeta" style="margin-bottom:8px">
+        <b>${pesos(p.monto)}</b> · ${p.medio || '—'} · ${dFecha(p.fecha)}
+        ${p.periodo_hasta ? `<br><span class="nota">Renovó hasta ${dFecha(p.periodo_hasta)}</span>` : ''}
+        ${p.nota ? `<br><span class="nota">${p.nota}</span>` : ''}
+      </div>`).join('') : '<p class="vacio">Sin pagos registrados aún.</p>');
+  $('#fondoHistorial').hidden = false;
+}
+$('#btnCerrarHistorial').addEventListener('click', () => $('#fondoHistorial').hidden = true);
+</script>
+</body>
+</html>

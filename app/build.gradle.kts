@@ -13,11 +13,23 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        val supabaseUrl = (project.findProperty("SUPABASE_URL") as String?) ?: "https://TU-PROYECTO.supabase.co"
+        val supabaseAnonKey = (project.findProperty("SUPABASE_ANON_KEY") as String?) ?: "TU-ANON-KEY"
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -32,6 +44,7 @@ android {
 
     buildFeatures {
         viewBinding = false
+        buildConfig = true
     }
 }
 
