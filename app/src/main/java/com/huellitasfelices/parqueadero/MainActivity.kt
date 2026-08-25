@@ -135,6 +135,16 @@ class MainActivity : AppCompatActivity() {
                     else -> false
                 }
             }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                super.onPageFinished(view, url)
+                val clave = intent.getStringExtra("clave_licencia") ?: ""
+                val js = "if(window.iniciarSync)window.iniciarSync(" +
+                    "${org.json.JSONObject.quote(clave)}," +
+                    "${org.json.JSONObject.quote(BuildConfig.SUPABASE_URL)}," +
+                    "${org.json.JSONObject.quote(BuildConfig.SUPABASE_ANON_KEY)});"
+                view.evaluateJavascript(js, null)
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {

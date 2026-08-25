@@ -56,7 +56,9 @@ class LicenseGateActivity : AppCompatActivity() {
     }
 
     private fun entrar() {
-        startActivity(Intent(this, MainActivity::class.java))
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra("clave_licencia", LicenseManager.obtenerClave(this))
+        startActivity(intent)
         finish()
     }
 

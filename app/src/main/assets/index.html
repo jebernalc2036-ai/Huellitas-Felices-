@@ -421,6 +421,7 @@ nav button.on{color:var(--ambar)}
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
+<script src="supabase.js"></script>
 <script>
 /* ═══════ ALMACENAMIENTO ═══════ */
 const Store=(()=>{let ok=true,mem={};
@@ -517,7 +518,124 @@ let ingresos=Store.get(K.ing,[]);
 let mensualidades=Store.get(K.men,[]);
 let tipoSel='carro',electricoSel=false;
 
-const sCfg=()=>Store.set(K.cfg,cfg),sTar=()=>Store.set(K.tar,tarifas),sCli=()=>Store.set(K.cli,clientes),
+/* ═══════ SINCRONIZACIÓN ENTRE CELULARES (misma licencia) ═══════
+   Cada celular sigue funcionando 100% local (Store/localStorage) sin
+   internet. Cuando hay conexión, este módulo empuja cada cambio al
+   proyecto Supabase de la licencia y trae cada ~7s lo que haya cambiado
+   en otros celulares de la misma licencia, mezclando por fecha de
+   actualización (el más reciente gana). Si Kotlin nunca llama a
+   window.iniciarSync (versión vieja del APK, o app abierta fuera de la
+   licencia) el módulo simplemente no hace nada: la app sigue igual que
+   siempre. */
+const Sync=(()=>{
+  const PENDIENTES='pqe_sync_pendientes';
+  let cliente=null,activo=false,ultimaSync=0,sincronizando=false;
+  const aIso=t=>t?new Date(t).toISOString():null;
+  const aEpoch=t=>t?new Date(t).getTime():null;
+
+  function encolar(item){const p=Store.get(PENDIENTES,[]);p.push(item);Store.set(PENDIENTES,p)}
+  async function vaciarPendientes(){
+    const p=Store.get(PENDIENTES,[]);
+    if(!p.length)return;
+    const restantes=[];
+    for(const item of p){
+      try{
+        const{error}=item.borrar
+          ?await cliente.from(item.tabla).delete().eq('id',item.id)
+          :await cliente.from(item.tabla).upsert(item.registro);
+        if(error)throw error;
+      }catch(e){restantes.push(item)}
+    }
+    Store.set(PENDIENTES,restantes);
+  }
+  function subir(tabla,registro){encolar({tabla,registro});if(activo)vaciarPendientes()}
+  function borrar(tabla,id){encolar({tabla,id,borrar:true});if(activo)vaciarPendientes()}
+
+  const filaIngreso=r=>({id:r.id,recibo:r.recibo,placa:r.placa,tipo:r.tipo,electrico:!!r.electrico,kwh:r.kwh||0,
+    nombre:r.nombre||'',celular:r.celular||'',obs:r.obs||'',entrada:aIso(r.entrada),salida:aIso(r.salida),
+    valor:r.valor,valor_parqueo:r.valorParqueo,valor_recarga:r.valorRecarga,medio:r.medio,operario:r.operario});
+  const filaMensualidad=m=>({id:m.id,recibo:m.recibo,placa:m.placa,tipo:m.tipo,titular:m.titular||'',
+    celular:m.celular||'',desde:m.desde,hasta:m.hasta,incluye_recarga:!!m.incluyeRecarga,valor:m.valor,
+    medio:m.medio,fecha:aIso(m.fecha),operario:m.operario});
+  const filaCliente=c=>({id:c.placa,placa:c.placa,nombre:c.nombre||'',celular:c.celular||'',tipo:c.tipo||''});
+
+  const deIngreso=f=>({id:f.id,recibo:f.recibo,placa:f.placa,tipo:f.tipo,electrico:!!f.electrico,kwh:f.kwh||0,
+    nombre:f.nombre||'',celular:f.celular||'',obs:f.obs||'',entrada:aEpoch(f.entrada),salida:aEpoch(f.salida),
+    valor:f.valor,valorParqueo:f.valor_parqueo,valorRecarga:f.valor_recarga,medio:f.medio,operario:f.operario,
+    _act:aEpoch(f.actualizado_en)||0});
+  const deMensualidad=f=>({id:f.id,recibo:f.recibo,placa:f.placa,tipo:f.tipo,titular:f.titular||'',
+    celular:f.celular||'',desde:f.desde,hasta:f.hasta,incluyeRecarga:!!f.incluye_recarga,valor:f.valor,
+    medio:f.medio,fecha:aEpoch(f.fecha),operario:f.operario,_act:aEpoch(f.actualizado_en)||0});
+  const deCliente=f=>({placa:f.placa,nombre:f.nombre||'',celular:f.celular||'',tipo:f.tipo||'',
+    _act:aEpoch(f.actualizado_en)||0});
+
+  function mezclarLista(local,remotos,convertir,clave){
+    let cambio=false;
+    remotos.forEach(reg=>{
+      const r=convertir(reg),i=local.findIndex(x=>clave(x)===clave(r));
+      if(i<0){local.push(r);cambio=true}
+      else if((r._act||0)>(local[i]._act||0)){local[i]=Object.assign({},local[i],r);cambio=true}
+    });
+    return cambio;
+  }
+
+  async function primeraSincronizacion(){
+    try{
+      await cliente.from('parqueo_config').upsert({cfg,tarifas});
+      for(const c of clientes)await cliente.from('parqueo_clientes').upsert(filaCliente(c));
+      for(const i of ingresos)await cliente.from('parqueo_ingresos').upsert(filaIngreso(i));
+      for(const m of mensualidades)await cliente.from('parqueo_mensualidades').upsert(filaMensualidad(m));
+    }catch(e){/* sin red: los cambios locales normales de más abajo se irán reintentando solos */}
+  }
+
+  async function ciclo(){
+    if(!activo||sincronizando)return;
+    sincronizando=true;
+    try{
+      await vaciarPendientes();
+      const desde=ultimaSync?new Date(ultimaSync).toISOString():'1970-01-01T00:00:00Z';
+      const[rCfg,rCli,rIng,rMen]=await Promise.all([
+        cliente.from('parqueo_config').select('*').maybeSingle(),
+        cliente.from('parqueo_clientes').select('*').gt('actualizado_en',desde),
+        cliente.from('parqueo_ingresos').select('*').gt('actualizado_en',desde),
+        cliente.from('parqueo_mensualidades').select('*').gt('actualizado_en',desde)
+      ]);
+      let cambios=false;
+      if(rCfg.data){
+        const actRemoto=aEpoch(rCfg.data.actualizado_en)||0;
+        if(actRemoto>(cfg._act||0)){
+          if(rCfg.data.cfg&&Object.keys(rCfg.data.cfg).length){cfg=Object.assign({},cfg,rCfg.data.cfg,{_act:actRemoto});Store.set(K.cfg,cfg)}
+          if(rCfg.data.tarifas&&Object.keys(rCfg.data.tarifas).length){tarifas=Object.assign({},tarifas,rCfg.data.tarifas);Store.set(K.tar,tarifas)}
+          cambios=true;
+        }
+      }
+      if(rCli.data&&rCli.data.length&&mezclarLista(clientes,rCli.data,deCliente,x=>x.placa)){Store.set(K.cli,clientes);cambios=true}
+      if(rIng.data&&rIng.data.length&&mezclarLista(ingresos,rIng.data,deIngreso,x=>x.id)){Store.set(K.ing,ingresos);cambios=true}
+      if(rMen.data&&rMen.data.length&&mezclarLista(mensualidades,rMen.data,deMensualidad,x=>x.id)){Store.set(K.men,mensualidades);cambios=true}
+      ultimaSync=Date.now();
+      if(cambios&&typeof repintarSegunVista==='function')repintarSegunVista();
+    }catch(e){/* sin red: se reintenta en el siguiente ciclo, cada 7s */}
+    sincronizando=false;
+  }
+
+  function iniciar(clave,url,anonKey){
+    if(activo||!clave||!url||!anonKey)return;
+    if(!window.supabase||!window.supabase.createClient)return;
+    cliente=window.supabase.createClient(url,anonKey,{
+      global:{headers:{'x-licencia-clave':clave}},
+      auth:{persistSession:false,autoRefreshToken:false}
+    });
+    activo=true;
+    primeraSincronizacion().then(()=>{ciclo();setInterval(ciclo,7000)});
+  }
+
+  return{iniciar,subir,borrar,filaIngreso,filaMensualidad,filaCliente,get activo(){return activo}};
+})();
+window.iniciarSync=(clave,url,anonKey)=>Sync.iniciar(clave,url,anonKey);
+
+const sCfg=()=>{Store.set(K.cfg,cfg);Sync.subir('parqueo_config',{cfg,tarifas})};
+const sTar=()=>{Store.set(K.tar,tarifas);Sync.subir('parqueo_config',{cfg,tarifas})};
+const sCli=()=>Store.set(K.cli,clientes),
       sIng=()=>Store.set(K.ing,ingresos),sMen=()=>Store.set(K.men,mensualidades);
 
 /* ═══════ UTILIDADES ═══════ */
@@ -711,11 +829,14 @@ function registrarEntrada(enviar){
     nombre:$('#nombre').value.trim(),celular:cel,obs:$('#obs').value.trim(),
     entrada:Date.now(),salida:null,valor:null,valorParqueo:null,valorRecarga:null,medio:null,operario:cfg.operario};
   ingresos.unshift(reg);sIng();
+  Sync.subir('parqueo_ingresos',Sync.filaIngreso(reg));
   if(cel||reg.nombre){
     const i=clientes.findIndex(c=>c.placa===placa);
     if(i>=0)Object.assign(clientes[i],{nombre:reg.nombre||clientes[i].nombre,celular:cel||clientes[i].celular,tipo:tipoSel});
     else clientes.push({placa,nombre:reg.nombre,celular:cel,tipo:tipoSel});
-    sCli()}
+    sCli();
+    Sync.subir('parqueo_clientes',Sync.filaCliente(clientes.find(c=>c.placa===placa)));
+  }
   if(enviar)abrirWA(reg.celular,armar(cfg.pIngreso,datosRecibo(reg,null)),`Recibo de ingreso ${reg.recibo}`);
   ['placa','nombre','celular','obs'].forEach(id=>$('#'+id).value='');
   $('#chkElectrico').checked=false;electricoSel=false;$('#swElectrico').classList.remove('on');
@@ -797,7 +918,7 @@ function mostrarLiquidacion(id,simMin){
    </div>`;
 
   if($('#inKwh'))$('#inKwh').addEventListener('change',()=>{
-    reg.kwh=+$('#inKwh').value||0;sIng();mostrarLiquidacion(id,simMin)});
+    reg.kwh=+$('#inKwh').value||0;sIng();Sync.subir('parqueo_ingresos',Sync.filaIngreso(reg));mostrarLiquidacion(id,simMin)});
   $$('#panelLiq .simul button').forEach(b=>b.addEventListener('click',()=>{
     const v=b.dataset.m;mostrarLiquidacion(id,v==='mes'?'mes':(+v||0));
   }));
@@ -810,6 +931,7 @@ function mostrarLiquidacion(id,simMin){
     const real=Date.now(),f=liquidar(reg.entrada,real,reg.tipo,reg.placa,reg.electrico,reg.kwh||0);
     reg.salida=real;reg.valor=f.total;reg.valorParqueo=f.parqueo;reg.valorRecarga=f.recarga;
     reg.medio=$('#medioPago').value;sIng();
+    Sync.subir('parqueo_ingresos',Sync.filaIngreso(reg));
     avisar(`Salida ${reg.placa} · ${pesos(f.total)}`,'ok');
     $('#busca').value='';$('#resultados').innerHTML='';$('#panelLiq').innerHTML='';refrescar()});
   $('#panelLiq').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -905,6 +1027,7 @@ function pintarMens(){
     :'<tr><td colspan="5" class="vacio">Sin mensualidades registradas.</td></tr>';
   $$('#tablaMens [data-del]').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm('¿Borrar esta mensualidad?'))return;
+    Sync.borrar('parqueo_mensualidades',b.dataset.del);
     mensualidades=mensualidades.filter(m=>m.id!==b.dataset.del);sMen();pintarMens()}));
 }
 function valorSugerido(){
@@ -933,10 +1056,12 @@ function registrarMens(enviar){
     incluyeRecarga:$('#mIncluyeRec').checked,valor:+$('#mValor').value||0,
     medio:$('#mMedio').value,fecha:Date.now(),operario:cfg.operario};
   mensualidades.unshift(m);sMen();
+  Sync.subir('parqueo_mensualidades',Sync.filaMensualidad(m));
   const i=clientes.findIndex(c=>c.placa===placa);
   if(i>=0)Object.assign(clientes[i],{nombre:m.titular||clientes[i].nombre,celular:m.celular||clientes[i].celular,tipo:m.tipo});
   else clientes.push({placa,nombre:m.titular,celular:m.celular,tipo:m.tipo});
   sCli();
+  Sync.subir('parqueo_clientes',Sync.filaCliente(clientes.find(c=>c.placa===placa)));
 
   if(enviar){
     const t=TIPOS.find(x=>x.id===m.tipo);
@@ -1095,9 +1220,16 @@ function arrancar(){
   cabecera();pintarTipos();pintarAjustes();pintarTarifas();pintarMedios();pintarRecarga();
   $('#rDesde').value=hoy();$('#rHasta').value=hoy();pintarMens();refrescar();pintarPatio();
 }
+function repintarSegunVista(){
+  cabecera();
+  if($('#v-patio').classList.contains('on'))pintarPatio();
+  if($('#v-caja').classList.contains('on'))pintarCaja();
+  if($('#v-ajustes').classList.contains('on'))pintarMens();
+  refrescar();
+}
 const tic=()=>$('#reloj').textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 tic();setInterval(tic,15000);
-setInterval(()=>{if($('#v-patio').classList.contains('on'))pintarPatio();refrescar()},60000);
+setInterval(repintarSegunVista,60000);
 arrancar();
 </script>
 </body>
